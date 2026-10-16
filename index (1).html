@@ -1,0 +1,932 @@
+<!doctype html>
+<html lang="fr" data-theme="iron">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0c0607">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Cockpit">
+<title>Cockpit</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+/* Layout: cockpit à quatre modules. Barre d'onglets en bas sur mobile, en haut sur grand écran. Deux thèmes sombres au choix. */
+:root{
+  --bg:#0c0607; --surface:#170b0d; --surface-2:#231214; --line:#3d1c1b; --grid:rgba(255,214,150,.03);
+  --text:#f4eadc; --muted:#ab9185; --accent:#f0b429; --accent-ink:#1c0d06; --brand:#b3202b; --glow:rgba(179,32,43,.28);
+  --up:#5fd38d; --down:#ff7468;
+  --font-display:'Rajdhani','Arial Narrow',sans-serif; --font-body:'Barlow',system-ui,-apple-system,'Segoe UI',sans-serif;
+  --tabbar-h:calc(64px + env(safe-area-inset-bottom,0px));
+  color-scheme:dark;
+}
+:root[data-theme="arc"]{
+  --bg:#04070b; --surface:#09121b; --surface-2:#0e1c2a; --line:#163550; --grid:rgba(120,200,255,.035);
+  --text:#e7f4ff; --muted:#7f9bb3; --accent:#2bb8ff; --accent-ink:#021019; --brand:#0b66c9; --glow:rgba(43,184,255,.22);
+  --up:#5fd9a0; --down:#ff7a70;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;min-height:100vh;color:var(--text);font:400 15px/1.5 var(--font-body);
+  background-color:var(--bg);
+  background-image:radial-gradient(820px 380px at 92% -8%,var(--glow),transparent 65%),linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px);
+  background-size:auto,44px 44px,44px 44px;background-repeat:no-repeat,repeat,repeat;
+  padding-bottom:calc(var(--tabbar-h) + 16px)}
+body:has(dialog[open]){overflow:hidden}
+.wrap{width:100%;max-width:1120px;margin-inline:auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+h1,h2,h3{font-family:var(--font-display);margin:0;text-wrap:balance}
+button,input,select{font:inherit;color:inherit}
+a{color:var(--accent)}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+[hidden]{display:none!important}
+
+/* En-tête */
+.top{display:flex;align-items:center;justify-content:space-between;gap:12px;padding-top:max(14px,env(safe-area-inset-top,0px));padding-bottom:10px}
+.brand{display:flex;align-items:center;gap:12px;min-width:0}
+.reactor{flex:none;width:36px;height:36px;border-radius:50%;border:2px solid var(--accent);position:relative;box-shadow:0 0 14px var(--glow),inset 0 0 10px var(--glow)}
+.reactor::before{content:"";position:absolute;inset:6px;border-radius:50%;border:2px dashed var(--accent);opacity:.7}
+.reactor::after{content:"";position:absolute;inset:13px;border-radius:50%;background:var(--accent);box-shadow:0 0 10px var(--accent)}
+.brand h1{font-size:24px;font-weight:700;letter-spacing:.22em;text-transform:uppercase;line-height:1}
+.brand p{margin:2px 0 0;font-size:12px;color:var(--muted);letter-spacing:.06em}
+.theme-btn{display:flex;align-items:center;gap:8px;min-height:40px;padding:6px 12px;background:var(--surface);border:1px solid var(--line);border-radius:2px;cursor:pointer;font-size:13px;white-space:nowrap}
+.theme-btn:hover{border-color:var(--accent)}
+.sw{display:inline-block;width:14px;height:14px;border-radius:50%}
+.sw-iron{background:linear-gradient(135deg,#b3202b 50%,#f0b429 50%)}
+.sw-arc{background:linear-gradient(135deg,#05080d 50%,#2bb8ff 50%);box-shadow:inset 0 0 0 1px #2bb8ff;margin-left:-14px;transform:translateX(7px)}
+.theme-btn .sw-iron,.theme-btn .sw-arc{display:none}
+:root[data-theme="iron"] .theme-btn .sw-iron,:root[data-theme="arc"] .theme-btn .sw-arc{display:inline-block;margin:0;transform:none}
+
+/* Onglets */
+.tabbar{position:fixed;left:0;right:0;bottom:0;z-index:20;display:grid;grid-template-columns:repeat(4,1fr);background:var(--surface);border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom,0px);padding-left:env(safe-area-inset-left,0px);padding-right:env(safe-area-inset-right,0px)}
+.tab{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;min-height:64px;padding:6px 2px;background:none;border:0;border-top:2px solid transparent;color:var(--muted);cursor:pointer;font:600 12px/1 var(--font-display);letter-spacing:.08em;text-transform:uppercase}
+.tab svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+.tab[aria-selected="true"]{color:var(--accent);border-top-color:var(--accent);background:linear-gradient(to bottom,var(--glow),transparent)}
+@media(min-width:860px){
+  :root{--tabbar-h:0px}
+  .tabbar{position:sticky;top:0;bottom:auto;grid-template-columns:repeat(4,max-content);gap:6px;justify-content:start;border-top:0;border-bottom:1px solid var(--line);padding-inline:max(16px,calc((100vw - 1120px)/2));background:color-mix(in srgb,var(--bg) 88%,transparent);backdrop-filter:blur(8px)}
+  .tab{flex-direction:row;gap:10px;min-height:48px;padding:0 18px;border-top:0;border-bottom:2px solid transparent;font-size:14px}
+  .tab[aria-selected="true"]{border-bottom-color:var(--accent);background:none}
+  body{padding-bottom:40px}
+  .tabbar{order:-1}
+}
+
+/* Panneaux */
+.panel{padding-block:18px 28px;display:grid;gap:16px}
+.panel-head h2{font-size:30px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;line-height:1.1}
+.lede{margin:6px 0 0;color:var(--muted);max-width:62ch}
+.note{margin:0;color:var(--muted);font-size:13px;max-width:78ch}
+.status{min-height:22px;color:var(--muted);font-size:14px}
+.status.err{color:var(--down)}
+.status .bar-load{display:inline-block;width:56px;height:3px;margin-right:10px;vertical-align:middle;background:linear-gradient(90deg,transparent,var(--accent),transparent);background-size:200% 100%;animation:sweep 1.1s linear infinite}
+@keyframes sweep{from{background-position:200% 0}to{background-position:-200% 0}}
+.tools{display:flex;flex-wrap:wrap;gap:10px 16px;align-items:center}
+.field{display:grid;gap:4px;min-width:0}
+.field>span,.legend{font:600 12px/1 var(--font-display);letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+input[type=search],input[type=text],input[type=password],select{width:100%;min-height:44px;padding:8px 12px;font-size:16px;background:var(--surface-2);border:1px solid var(--line);border-radius:2px}
+input::placeholder{color:var(--muted)}
+.check{display:flex;align-items:center;gap:8px;min-height:44px;font-size:14px;cursor:pointer}
+.check input{width:18px;height:18px;accent-color:var(--accent)}
+.btn{min-height:44px;padding:0 20px;border:1px solid var(--accent);border-radius:2px;background:var(--accent);color:var(--accent-ink);font:700 15px/1 var(--font-display);letter-spacing:.1em;text-transform:uppercase;cursor:pointer}
+.btn:hover{filter:brightness(1.08)}
+.btn[disabled]{opacity:.5;cursor:progress}
+.btn.ghost{background:transparent;color:var(--text);border-color:var(--line)}
+.btn.ghost:hover{border-color:var(--accent)}
+.btn.small{min-height:36px;padding:0 12px;font-size:13px}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:2px;overflow:hidden}
+.seg button{min-height:40px;padding:0 14px;background:var(--surface);border:0;border-right:1px solid var(--line);cursor:pointer;font:600 14px/1 var(--font-display);letter-spacing:.06em}
+.seg button:last-child{border-right:0}
+.seg button[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink)}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{min-height:38px;padding:0 12px;background:var(--surface);border:1px solid var(--line);border-radius:2px;cursor:pointer;font-size:14px}
+.chip:hover{border-color:var(--accent)}
+.chip[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--accent-ink);font-weight:600}
+fieldset{margin:0;padding:0;border:0;display:grid;gap:8px;min-width:0}
+legend{padding:0;margin-bottom:8px}
+.panel-box{padding:14px;background:var(--surface);border:1px solid var(--line);border-radius:3px}
+details.panel-box>summary{cursor:pointer;font:700 15px/1 var(--font-display);letter-spacing:.1em;text-transform:uppercase;min-height:28px;display:flex;align-items:center}
+details.panel-box[open]>summary{margin-bottom:14px}
+.form-grid{display:grid;gap:14px;grid-template-columns:repeat(auto-fit,minmax(220px,1fr))}
+.pill{display:inline-block;padding:2px 8px;border:1px solid var(--line);border-radius:2px;font-size:12px;color:var(--muted);letter-spacing:.04em}
+
+/* Recettes */
+.actionbar{position:sticky;bottom:var(--tabbar-h);z-index:5;display:flex;flex-wrap:wrap;align-items:center;gap:10px 14px;padding:12px 14px;background:var(--surface);border:1px solid var(--accent);border-radius:3px;box-shadow:0 -8px 24px rgba(0,0,0,.4)}
+.actionbar .count{flex:1 1 140px;font:600 16px/1.1 var(--font-display);letter-spacing:.06em;text-transform:uppercase}
+.cards{display:grid;gap:14px;grid-template-columns:repeat(auto-fill,minmax(250px,1fr))}
+.recipe{display:flex;flex-direction:column;min-width:0;padding:0;text-align:left;background:var(--surface);border:1px solid var(--line);border-radius:3px;overflow:hidden;cursor:pointer}
+.recipe:hover{border-color:var(--accent)}
+.recipe img{width:100%;aspect-ratio:16/10;object-fit:cover;display:block;background:var(--surface-2)}
+.recipe .body{display:grid;gap:8px;padding:12px 14px 14px}
+.recipe .rt{font:700 20px/1.15 var(--font-display)}
+.recipe .meta{font-size:13px;color:var(--muted)}
+.meter{display:block;height:6px;background:var(--surface-2);border-radius:1px;overflow:hidden}
+.meter i{display:block;height:100%;background:linear-gradient(90deg,var(--brand),var(--accent))}
+.recipe .miss{font-size:13px;color:var(--muted)}
+.recipe .ok{font-size:13px;color:var(--up);font-weight:600}
+dialog{padding:0;border:1px solid var(--accent);border-radius:3px;background:var(--bg);color:var(--text);width:min(720px,100%);max-height:92dvh;margin:auto;overflow:hidden}
+dialog::backdrop{background:rgba(0,0,0,.72)}
+@media(max-width:700px){dialog{margin:auto 0 0;width:100%;max-width:100%;max-height:94dvh;border-bottom:0}}
+.sheet{display:flex;flex-direction:column;max-height:inherit}
+.sheet-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 16px;border-bottom:1px solid var(--line);background:var(--surface)}
+.sheet-head h3{font-size:24px;font-weight:700;line-height:1.1}
+.x{flex:none;width:44px;height:44px;background:none;border:1px solid var(--line);border-radius:2px;font-size:24px;line-height:1;cursor:pointer}
+.sheet-body{flex:1 1 auto;min-height:0;overflow:auto;padding:16px;display:grid;gap:18px;padding-bottom:max(20px,env(safe-area-inset-bottom,0px))}
+.sheet img{width:100%;max-height:260px;object-fit:cover;border-radius:2px;display:block}
+.sheet h4{margin:0 0 8px;font:700 14px/1 var(--font-display);letter-spacing:.14em;text-transform:uppercase;color:var(--accent)}
+.ing{list-style:none;margin:0;padding:0;display:grid;gap:6px;grid-template-columns:repeat(auto-fill,minmax(220px,1fr))}
+.ing li{display:flex;gap:8px;align-items:baseline;min-width:0}
+.ing .mark{flex:none;width:1.2em;font-weight:700}
+.ing .have .mark{color:var(--up)}
+.ing .lack .mark{color:var(--down)}
+.ing small{color:var(--muted)}
+.steps{margin:0;padding-left:1.4em;display:grid;gap:10px;max-width:68ch}
+.row-actions{display:flex;flex-wrap:wrap;gap:10px}
+
+/* Paris */
+.match-head,.match{display:grid;gap:10px}
+.match-head{display:none;padding:0 14px;font:600 12px/1 var(--font-display);letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+.list{display:grid;gap:10px}
+.match{padding:14px;background:var(--surface);border:1px solid var(--line);border-radius:3px}
+.match .rank{font:700 22px/1 var(--font-display);color:var(--accent);font-variant-numeric:tabular-nums}
+.match .teams{display:grid;gap:3px;min-width:0}
+.match .teams strong{font:700 20px/1.15 var(--font-display);overflow-wrap:anywhere}
+.match .when,.match .comp{font-size:13px;color:var(--muted)}
+.match .pick{display:grid;gap:6px;min-width:0}
+.pick-line{display:flex;justify-content:space-between;align-items:baseline;gap:10px}
+.pick-line b,.sc b{font:700 24px/1 var(--font-display);font-variant-numeric:tabular-nums}
+.pick small{color:var(--muted);font-size:12px}
+.sc{display:grid;gap:3px;min-width:0}
+.sc .lbl{font-size:12px;color:var(--muted);letter-spacing:.05em}
+.sc .who{display:flex;justify-content:space-between;align-items:baseline;gap:10px}
+.sc strong{font-weight:600;overflow-wrap:anywhere}
+.low{color:var(--muted);font-size:12px}
+@media(min-width:820px){
+  .match-head,.match{grid-template-columns:44px minmax(0,1.5fr) minmax(0,1.5fr) minmax(0,1.1fr);align-items:center;gap:18px}
+  .match-head{display:grid}
+  .sc .lbl{display:none}
+}
+
+/* Crypto */
+.coin-head,.coin{display:grid;gap:8px 12px;align-items:center}
+.coin-head{display:none;padding:0 14px;font:600 12px/1 var(--font-display);letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+.coin{padding:12px 14px;background:var(--surface);border:1px solid var(--line);border-radius:3px;grid-template-columns:28px minmax(0,1fr) auto}
+.coin .rk{font:700 18px/1 var(--font-display);color:var(--muted);font-variant-numeric:tabular-nums}
+.coin .id{display:flex;align-items:center;gap:10px;min-width:0}
+.coin .id img{width:28px;height:28px;border-radius:50%;flex:none;background:var(--surface-2)}
+.coin .id div{min-width:0}
+.coin .id strong{display:block;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.coin .id span{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+.coin .px{grid-column:2/4;font-variant-numeric:tabular-nums;color:var(--muted);font-size:14px;display:flex;flex-wrap:wrap;gap:4px 14px}
+.coin .main{font:700 24px/1 var(--font-display);font-variant-numeric:tabular-nums;text-align:right}
+.up{color:var(--up)}.down{color:var(--down)}
+.spark{width:96px;height:28px;display:block}
+.coin .sparkcell{display:none}
+@media(min-width:820px){
+  .coin-head,.coin{grid-template-columns:36px minmax(0,1.6fr) 1fr 1fr 1.3fr 110px;gap:16px}
+  .coin-head{display:grid}
+  .coin .px{display:contents}
+  .coin .p-price{order:3}
+  .coin .main{order:4}
+  .coin .p-vol{order:5}
+  .coin .sparkcell{display:block;order:6}
+  .coin .vl{display:none}
+}
+.num{font-variant-numeric:tabular-nums}
+
+/* Entreprises */
+.co{display:grid;grid-template-columns:72px minmax(0,1fr);gap:6px 14px;padding:14px;background:var(--surface);border:1px solid var(--line);border-radius:3px}
+.score{display:grid;place-items:center;align-content:center;gap:4px;min-height:72px;border:1px solid var(--line);border-radius:2px;background:var(--surface-2)}
+.score b{font:700 30px/1 var(--font-display);font-variant-numeric:tabular-nums}
+.score span{font:600 11px/1 var(--font-display);letter-spacing:.14em;text-transform:uppercase}
+.score.fort{border-color:var(--accent)} .score.fort b{color:var(--accent)}
+.score.faible span{color:var(--muted)}
+.co h3{font-size:20px;font-weight:700;line-height:1.15;overflow-wrap:anywhere}
+.co p{margin:2px 0 0;color:var(--muted);font-size:14px;overflow-wrap:anywhere}
+.co-main{min-width:0}
+.co-links{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:8px}
+.co-links a{display:inline-flex;align-items:center;min-height:36px;padding:0 12px;border:1px solid var(--line);border-radius:2px;text-decoration:none;font-size:13px;color:var(--text)}
+.co-links a:hover{border-color:var(--accent);color:var(--accent)}
+@media(min-width:820px){
+  .co-list{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+.co-list{display:grid;gap:10px}
+@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+
+<header class="top wrap">
+  <div class="brand">
+    <span class="reactor" aria-hidden="true"></span>
+    <div><h1>Cockpit</h1><p>Recettes, paris, crypto, clients</p></div>
+  </div>
+  <button id="theme-btn" class="theme-btn" type="button" aria-label="Changer de couleurs"><span class="sw sw-iron"></span><span class="sw sw-arc"></span><span id="theme-name">Rouge et or</span></button>
+</header>
+
+<nav class="tabbar" role="tablist" aria-label="Sections">
+  <button class="tab" role="tab" id="t-recettes" data-tab="recettes" aria-selected="true" aria-controls="tab-recettes"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 10h16v6a4 4 0 0 1-4 4H8a4 4 0 0 1-4-4v-6z"/><path d="M2 10h20M9 6.5c0-1.5 1-2 1-3.5M14 6.5c0-1.5 1-2 1-3.5"/></svg><span>Recettes</span></button>
+  <button class="tab" role="tab" id="t-paris" data-tab="paris" aria-selected="false" aria-controls="tab-paris"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 20h18M6 20v-7M11 20V5M16 20v-10"/></svg><span>Paris</span></button>
+  <button class="tab" role="tab" id="t-crypto" data-tab="crypto" aria-selected="false" aria-controls="tab-crypto"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M9.5 7v10M9.5 8.5h3.8a1.8 1.8 0 0 1 0 3.5H9.5m0 0h4.2a1.8 1.8 0 0 1 0 3.5H9.5"/></svg><span>Crypto</span></button>
+  <button class="tab" role="tab" id="t-clients" data-tab="clients" aria-selected="false" aria-controls="tab-clients"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 21V5l8-2v18M12 9h8v12M3 21h18M8 8h1M8 12h1M8 16h1M16 13h1M16 17h1"/></svg><span>Entreprises</span></button>
+</nav>
+
+<main class="wrap">
+
+<!-- ========== RECETTES ========== -->
+<section id="tab-recettes" class="panel" role="tabpanel" aria-labelledby="t-recettes">
+  <div class="panel-head">
+    <h2>Recettes</h2>
+    <p class="lede">Sélectionne ce que tu as dans ton frigo. Les recettes qui demandent le moins de courses passent en premier.</p>
+  </div>
+  <div class="tools">
+    <label class="field" style="flex:1 1 260px"><span>Filtrer la liste</span><input id="ing-search" type="search" placeholder="poulet, riz, citron…" autocomplete="off"></label>
+    <label class="check"><input type="checkbox" id="staples" checked> Sel, poivre, huile et eau déjà à la maison</label>
+  </div>
+  <div id="ing-groups" style="display:grid;gap:18px"></div>
+  <div class="actionbar">
+    <span class="count" id="sel-count">0 ingrédient</span>
+    <button class="btn ghost small" id="btn-clear" type="button">Vider</button>
+    <button class="btn" id="btn-recipes" type="button">Trouver des recettes</button>
+  </div>
+  <div id="recipes-status" class="status" aria-live="polite"></div>
+  <div id="recipes" class="cards"></div>
+  <p class="note">Recettes issues de TheMealDB, une base internationale rédigée en anglais. Le bouton « Traduire » dans chaque recette en donne une version française automatique.</p>
+</section>
+
+<!-- ========== PARIS ========== -->
+<section id="tab-paris" class="panel" role="tabpanel" aria-labelledby="t-paris" hidden>
+  <div class="panel-head">
+    <h2>Paris sportifs</h2>
+    <p class="lede">Matchs à venir classés du résultat le plus probable au moins probable, avec le buteur le plus probable de chaque rencontre.</p>
+  </div>
+  <details class="panel-box" id="fd-config" open>
+    <summary>Réglages</summary>
+    <div class="form-grid">
+      <label class="field"><span>Clé gratuite football-data.org</span><input id="fd-key" type="password" autocomplete="off" placeholder="Colle ta clé ici"></label>
+      <label class="field"><span>Période</span>
+        <select id="fd-days"><option value="2">2 prochains jours</option><option value="4" selected>4 prochains jours</option><option value="7">7 prochains jours</option><option value="10">10 prochains jours</option></select>
+      </label>
+    </div>
+    <fieldset style="margin-top:14px"><legend class="legend">Compétitions</legend><div class="chips" id="fd-comps"></div></fieldset>
+    <div class="tools" style="margin-top:14px">
+      <label class="check"><input type="checkbox" id="fd-scorers" checked> Calculer le buteur probable (plus lent)</label>
+      <button class="btn" id="btn-paris" type="button">Calculer les probabilités</button>
+    </div>
+    <p class="note" style="margin-top:10px">Pas de clé ? Crée un compte gratuit sur <a href="https://www.football-data.org/client/register" target="_blank" rel="noopener">football-data.org</a>, la clé arrive par e-mail. Elle reste dans ce navigateur et sert uniquement à interroger leur service.</p>
+  </details>
+  <div id="paris-status" class="status" aria-live="polite"></div>
+  <div class="match-head" id="match-head"><span>#</span><span>Match</span><span>Résultat le plus probable</span><span>Buteur le plus probable</span></div>
+  <div id="paris-list" class="list"></div>
+  <p class="note">Estimation par modèle de Poisson à partir des buts marqués et encaissés au classement, avec avantage du terrain. Elle ignore blessures, compositions et cotes des bookmakers. Une probabilité de 60 % se trompe quatre fois sur dix. Les paris comportent des risques (perte d'argent, dépendance). Aide : Joueurs Info Service, 09 74 75 13 13. Offre gratuite de football-data.org : championnats majeurs européens, Ligue des champions, Coupe du monde, Euro. La Ligue des nations demande une offre payante.</p>
+</section>
+
+<!-- ========== CRYPTO ========== -->
+<section id="tab-crypto" class="panel" role="tabpanel" aria-labelledby="t-crypto" hidden>
+  <div class="panel-head">
+    <h2>Cryptomonnaies</h2>
+    <p class="lede">Les plus fortes hausses du moment parmi les cryptos les plus échangées, en euros, mises à jour toutes les 90 secondes.</p>
+  </div>
+  <div class="tools">
+    <div class="field"><span>Période</span>
+      <div class="seg" id="cr-period" role="group" aria-label="Période">
+        <button type="button" data-p="1h" aria-pressed="false">1 h</button><button type="button" data-p="24h" aria-pressed="true">24 h</button><button type="button" data-p="7d" aria-pressed="false">7 j</button><button type="button" data-p="30d" aria-pressed="false">30 j</button>
+      </div>
+    </div>
+    <div class="field"><span>Univers</span>
+      <div class="seg" id="cr-universe" role="group" aria-label="Univers">
+        <button type="button" data-u="50" aria-pressed="false">Top 50</button><button type="button" data-u="100" aria-pressed="true">Top 100</button><button type="button" data-u="250" aria-pressed="false">Top 250</button>
+      </div>
+    </div>
+    <label class="check"><input type="checkbox" id="cr-vol" checked> Volume 24 h supérieur à 5 M€</label>
+    <button class="btn ghost small" id="btn-crypto" type="button">Actualiser</button>
+  </div>
+  <div id="crypto-status" class="status" aria-live="polite"></div>
+  <div class="coin-head" id="coin-head"><span>#</span><span>Crypto</span><span>Prix</span><span>Variation</span><span>Volume 24 h</span><span>7 jours</span></div>
+  <div id="crypto-list" class="list"></div>
+  <p class="note">Données CoinGecko. Une forte hausse récente ne garantit pas la suite : ces cours peuvent s'inverser en quelques heures. Ce n'est pas un conseil financier.</p>
+</section>
+
+<!-- ========== ENTREPRISES ========== -->
+<section id="tab-clients" class="panel" role="tabpanel" aria-labelledby="t-clients" hidden>
+  <div class="panel-head">
+    <h2>Entreprises du Bas-Rhin</h2>
+    <p class="lede">Commerces et petites sociétés du 67 qui ont le plus de chances d'avoir besoin d'un community manager, classés par potentiel.</p>
+  </div>
+  <div class="panel-box" style="display:grid;gap:14px">
+    <fieldset><legend class="legend">Secteurs</legend><div class="chips" id="cl-sectors"></div></fieldset>
+    <div class="form-grid">
+      <label class="field"><span>Création</span><select id="cl-age"><option value="0">Toutes les entreprises</option><option value="12">Moins d'un an</option><option value="36" selected>Moins de 3 ans</option><option value="84">Moins de 7 ans</option></select></label>
+      <label class="field"><span>Taille</span><select id="cl-size"><option value="any">Toutes</option><option value="9" selected>9 salariés ou moins</option><option value="5">5 salariés ou moins</option></select></label>
+      <label class="field"><span>Commune</span><input id="cl-city" type="text" placeholder="Strasbourg, Haguenau…" autocomplete="off"></label>
+    </div>
+    <div class="tools">
+      <button class="btn" id="btn-clients" type="button">Chercher</button>
+      <button class="btn ghost" id="btn-more" type="button" hidden>Charger plus</button>
+      <button class="btn ghost" id="btn-csv" type="button" hidden>Exporter en CSV</button>
+    </div>
+  </div>
+  <div id="clients-status" class="status" aria-live="polite"></div>
+  <div id="clients-list" class="co-list"></div>
+  <p class="note">Source : annuaire officiel des entreprises (data.gouv.fr), entreprises en activité. Le score (0 à 100) combine le secteur, la petite taille de l'équipe et la création récente. L'annuaire ne dit pas si une entreprise a déjà un community manager : utilise les liens Google, Instagram et Maps de chaque fiche pour vérifier sa présence avant de la contacter.</p>
+</section>
+
+</main>
+
+<dialog id="sheet" aria-labelledby="sheet-title">
+  <div class="sheet">
+    <div class="sheet-head"><h3 id="sheet-title"></h3><button class="x" id="sheet-close" type="button" aria-label="Fermer">×</button></div>
+    <div class="sheet-body" id="sheet-body"></div>
+  </div>
+</dialog>
+
+<script>
+/*PURE-START*/
+const STAPLES = ['salt','pepper','black pepper','water','olive oil','vegetable oil','oil','sea salt','kosher salt','sunflower oil','cold water'];
+const normName = s => String(s || '').toLowerCase().trim().replace(/s$/, '');
+
+function hasIngredient(name, selected, staples) {
+  const n = normName(name);
+  if (!n) return false;
+  if (staples && STAPLES.some(s => normName(s) === n)) return true;
+  for (const sel of selected) {
+    const t = normName(sel);
+    if (n === t || n.includes(t) || t.includes(n)) return true;
+  }
+  return false;
+}
+
+function poissonPmf(lambda, kmax) {
+  const out = [Math.exp(-lambda)];
+  for (let k = 1; k <= kmax; k++) out.push(out[k - 1] * lambda / k);
+  return out;
+}
+
+function matchProbs(lh, la) {
+  const ph = poissonPmf(lh, 10), pa = poissonPmf(la, 10);
+  let h = 0, d = 0, a = 0;
+  for (let i = 0; i <= 10; i++) for (let j = 0; j <= 10; j++) {
+    const p = ph[i] * pa[j];
+    if (i > j) h += p; else if (i === j) d += p; else a += p;
+  }
+  const s = h + d + a;
+  return { h: h / s, d: d / s, a: a / s };
+}
+
+function buildStrengths(rows, k = 4) {
+  let gf = 0, p = 0;
+  rows.forEach(r => { gf += r.gf; p += r.p; });
+  const mu = (p > 0 && gf > 0) ? gf / p : 1.35;
+  const map = {};
+  rows.forEach(r => {
+    map[r.id] = { att: ((r.gf + k * mu) / (r.p + k)) / mu, def: ((r.ga + k * mu) / (r.p + k)) / mu, p: r.p };
+  });
+  return { mu, map };
+}
+
+function predictMatch(S, homeId, awayId, neutral) {
+  const h = S.map[homeId] || { att: 1, def: 1, p: 0 };
+  const a = S.map[awayId] || { att: 1, def: 1, p: 0 };
+  const hf = neutral ? 1 : 1.12, af = neutral ? 1 : 0.9;
+  const lh = S.mu * hf * h.att * a.def;
+  const la = S.mu * af * a.att * h.def;
+  return Object.assign({ lh, la, games: Math.min(h.p, a.p) }, matchProbs(lh, la));
+}
+
+function bestScorer(scorers, homeId, awayId, S, neutral) {
+  let best = null;
+  for (const s of scorers || []) {
+    const tid = s.team && s.team.id;
+    if (tid !== homeId && tid !== awayId) continue;
+    const games = s.playedMatches || 0;
+    if (!games || !s.goals) continue;
+    const opp = S.map[tid === homeId ? awayId : homeId] || { def: 1 };
+    const side = neutral ? 1 : (tid === homeId ? 1.12 : 0.9);
+    const prob = 1 - Math.exp(-(s.goals / games) * opp.def * side);
+    if (!best || prob > best.prob) best = { name: s.player && s.player.name, team: (s.team.tla || s.team.shortName || s.team.name), prob };
+  }
+  return best;
+}
+
+function scoreCompany(fit, eff, months) {
+  const table = { NN: 25, '00': 25, '01': 22, '02': 16, '03': 8 };
+  const e = (eff === null || eff === undefined) ? 12 : (table[eff] !== undefined ? table[eff] : 0);
+  const a = (months === null || months === undefined) ? 0 : months <= 12 ? 25 : months <= 36 ? 15 : months <= 84 ? 6 : 0;
+  return Math.round((fit + e + a) / 80 * 100);
+}
+
+function monthsSince(iso, now) {
+  if (!iso) return null;
+  const d = new Date(iso);
+  if (isNaN(d)) return null;
+  let m = (now.getFullYear() - d.getFullYear()) * 12 + (now.getMonth() - d.getMonth());
+  if (now.getDate() < d.getDate()) m -= 1;
+  return Math.max(0, m);
+}
+/*PURE-END*/
+
+/* ---------- Outils ---------- */
+const $ = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+const pct = x => Math.round(x * 100) + ' %';
+const store = {
+  get(k, d) { try { const v = localStorage.getItem('cockpit.' + k); return v === null ? d : JSON.parse(v); } catch (e) { return d; } },
+  set(k, v) { try { localStorage.setItem('cockpit.' + k, JSON.stringify(v)); } catch (e) { /* stockage indisponible */ } }
+};
+async function getJson(url, opts) {
+  const ctl = new AbortController();
+  const t = setTimeout(() => ctl.abort(), 25000);
+  try {
+    const r = await fetch(url, Object.assign({ signal: ctl.signal }, opts || {}));
+    if (!r.ok) { const e = new Error('HTTP ' + r.status); e.status = r.status; throw e; }
+    return await r.json();
+  } finally { clearTimeout(t); }
+}
+function friendly(e) {
+  if (e && e.name === 'AbortError') return 'Le service met trop de temps à répondre. Réessaie dans un instant.';
+  if (e instanceof TypeError) return 'Connexion impossible : vérifie ton réseau, ou une extension qui bloque la requête.';
+  return (e && e.message) || 'Erreur inconnue.';
+}
+function setStatus(id, html, isErr) { const el = $(id); el.className = 'status' + (isErr ? ' err' : ''); el.innerHTML = html; }
+const loading = txt => '<span class="bar-load"></span>' + esc(txt);
+
+/* ---------- Thème ---------- */
+const THEMES = { iron: 'Rouge et or', arc: 'Noir et bleu' };
+function applyTheme(t) {
+  document.documentElement.dataset.theme = t;
+  $('#theme-name').textContent = THEMES[t];
+  const m = document.querySelector('meta[name="theme-color"]');
+  if (m) m.content = t === 'arc' ? '#04070b' : '#0c0607';
+  store.set('theme', t);
+}
+$('#theme-btn').addEventListener('click', () => applyTheme(document.documentElement.dataset.theme === 'iron' ? 'arc' : 'iron'));
+applyTheme(store.get('theme', 'iron') === 'arc' ? 'arc' : 'iron');
+
+/* ---------- Onglets ---------- */
+const TABS = ['recettes', 'paris', 'crypto', 'clients'];
+let activeTab = 'recettes';
+function showTab(id, push) {
+  if (!TABS.includes(id)) id = 'recettes';
+  activeTab = id;
+  TABS.forEach(t => {
+    $('#tab-' + t).hidden = t !== id;
+    $('#t-' + t).setAttribute('aria-selected', String(t === id));
+  });
+  if (push) { try { history.replaceState(null, '', '#' + id); } catch (e) { /* ignoré */ } }
+  if (id === 'crypto' && !CR.data.length) loadCrypto();
+  window.scrollTo(0, 0);
+}
+$$('.tab').forEach(b => b.addEventListener('click', () => showTab(b.dataset.tab, true)));
+
+/* =====================================================
+   RECETTES
+   ===================================================== */
+const MEAL = 'https://www.themealdb.com/api/json/v1/1/';
+const GROUPS = [
+  ['Viandes, poissons, œufs', [['Poulet','Chicken'],['Blanc de poulet','Chicken Breast'],['Bœuf','Beef'],['Bœuf haché','Minced Beef'],['Porc','Pork'],['Agneau','Lamb'],['Bacon','Bacon'],['Jambon','Ham'],['Saucisses','Sausages'],['Chorizo','Chorizo'],['Canard','Duck'],['Dinde hachée','Turkey Mince'],['Saumon','Salmon'],['Thon','Tuna'],['Cabillaud','Cod'],['Crevettes','Prawns'],['Moules','Mussels'],['Œufs','Eggs']]],
+  ['Légumes', [['Oignons','Onions'],['Ail','Garlic'],['Tomates','Tomatoes'],['Pommes de terre','Potatoes'],['Carottes','Carrots'],['Champignons','Mushrooms'],['Épinards','Spinach'],['Courgettes','Courgettes'],['Aubergine','Aubergine'],['Brocoli','Broccoli'],['Poireau','Leek'],['Céleri','Celery'],['Chou','Cabbage'],['Petits pois','Peas'],['Haricots verts','Green Beans'],['Poivron rouge','Red Pepper'],['Poivron jaune','Yellow Pepper'],['Concombre','Cucumber'],['Salade','Lettuce'],['Potiron','Pumpkin'],['Maïs','Sweetcorn'],['Oignons nouveaux','Spring Onions'],['Échalotes','Shallots'],['Fenouil','Fennel'],['Kale','Kale'],['Asperges','Asparagus']]],
+  ['Féculents et placard', [['Riz','Rice'],['Spaghetti','Spaghetti'],['Penne','Penne Rigate'],['Tagliatelles','Tagliatelle'],['Macaronis','Macaroni'],['Couscous','Couscous'],['Pain','Bread'],['Farine','Flour'],['Nouilles de riz','Rice Noodles'],['Lentilles','Lentils'],['Pois chiches','Chickpeas'],['Haricots rouges','Kidney Beans'],['Tortillas','Tortillas'],['Pâte feuilletée','Puff Pastry'],['Pâte brisée','Shortcrust Pastry'],['Lait de coco','Coconut Milk'],['Concentré de tomate','Tomato Puree']]],
+  ['Produits laitiers', [['Lait','Milk'],['Beurre','Butter'],['Crème liquide','Cream'],['Crème épaisse','Double Cream'],['Crème fraîche','Creme Fraiche'],['Fromage','Cheese'],['Cheddar','Cheddar Cheese'],['Parmesan','Parmesan'],['Mozzarella','Mozzarella'],['Feta','Feta'],['Chèvre','Goats Cheese'],['Yaourt','Yogurt'],['Mascarpone','Mascarpone'],['Ricotta','Ricotta'],['Brie','Brie']]],
+  ['Fruits, sucré, noix', [['Citron','Lemon'],['Citron vert','Lime'],['Pommes','Apples'],['Bananes','Banana'],['Miel','Honey'],['Sucre','Sugar'],['Chocolat noir','Dark Chocolate'],['Amandes','Almonds'],['Noix','Walnuts'],['Beurre de cacahuète','Peanut Butter']]],
+  ['Condiments, épices, vins', [['Huile d’olive','Olive Oil'],['Sauce soja','Soy Sauce'],['Moutarde','Mustard'],['Piment','Chilli'],['Gingembre','Ginger'],['Basilic','Basil'],['Persil','Parsley'],['Thym','Thyme'],['Romarin','Rosemary'],['Cannelle','Cinnamon'],['Paprika','Paprika'],['Cumin','Cumin'],['Curry','Curry Powder'],['Vin rouge','Red Wine'],['Vin blanc','White Wine'],['Bouillon de poulet','Chicken Stock'],['Bouillon de légumes','Vegetable Stock']]]
+];
+const FR = {};
+GROUPS.forEach(g => g[1].forEach(([fr, en]) => { FR[en.toLowerCase()] = fr; }));
+const frName = en => FR[String(en).toLowerCase()] || en;
+
+const selected = new Set(store.get('ingredients', []));
+const mealCache = new Map();
+
+function renderChips() {
+  const host = $('#ing-groups');
+  host.innerHTML = GROUPS.map((g, gi) => `<fieldset data-g="${gi}"><legend class="legend">${esc(g[0])}</legend><div class="chips">` +
+    g[1].map(([fr, en]) => `<button type="button" class="chip" data-en="${esc(en)}" data-fr="${esc(fr.toLowerCase())}" aria-pressed="${selected.has(en)}">${esc(fr)}</button>`).join('') +
+    '</div></fieldset>').join('');
+  updateCount();
+}
+$('#ing-groups').addEventListener('click', e => {
+  const b = e.target.closest('.chip'); if (!b) return;
+  const en = b.dataset.en;
+  if (selected.has(en)) selected.delete(en); else selected.add(en);
+  b.setAttribute('aria-pressed', String(selected.has(en)));
+  store.set('ingredients', [...selected]);
+  updateCount();
+});
+$('#ing-search').addEventListener('input', e => {
+  const q = e.target.value.trim().toLowerCase();
+  $$('#ing-groups .chip').forEach(c => { c.hidden = q && !c.dataset.fr.includes(q); });
+  $$('#ing-groups fieldset').forEach(f => { f.hidden = !$$('.chip', f).some(c => !c.hidden); });
+});
+function updateCount() {
+  const n = selected.size;
+  $('#sel-count').textContent = n + (n > 1 ? ' ingrédients' : ' ingrédient');
+}
+$('#btn-clear').addEventListener('click', () => {
+  selected.clear(); store.set('ingredients', []);
+  $$('#ing-groups .chip').forEach(c => c.setAttribute('aria-pressed', 'false'));
+  updateCount(); $('#recipes').innerHTML = ''; setStatus('#recipes-status', '');
+});
+
+function parseMeal(m) {
+  const ings = [];
+  for (let i = 1; i <= 20; i++) {
+    const n = (m['strIngredient' + i] || '').trim();
+    if (n) ings.push({ name: n, measure: (m['strMeasure' + i] || '').trim() });
+  }
+  return { id: m.idMeal, name: m.strMeal, cat: m.strCategory, area: m.strArea, img: m.strMealThumb, text: m.strInstructions || '', yt: m.strYoutube || '', ings };
+}
+async function lookupMeal(id) {
+  if (mealCache.has(id)) return mealCache.get(id);
+  const d = await getJson(MEAL + 'lookup.php?i=' + encodeURIComponent(id));
+  const m = d.meals && d.meals[0] ? parseMeal(d.meals[0]) : null;
+  mealCache.set(id, m);
+  return m;
+}
+
+let recipeResults = [];
+$('#btn-recipes').addEventListener('click', findRecipes);
+async function findRecipes() {
+  const sel = [...selected].slice(0, 10);
+  const btn = $('#btn-recipes');
+  if (!sel.length) { setStatus('#recipes-status', 'Choisis au moins un ingrédient.', true); return; }
+  btn.disabled = true;
+  setStatus('#recipes-status', loading('Recherche des recettes…'));
+  $('#recipes').innerHTML = '';
+  try {
+    const lists = await Promise.all(sel.map(async en => {
+      const d = await getJson(MEAL + 'filter.php?i=' + encodeURIComponent(en.toLowerCase().replace(/ /g, '_')));
+      return Array.isArray(d.meals) ? d.meals : [];
+    }));
+    const map = new Map();
+    lists.forEach(list => list.forEach(m => { const e = map.get(m.idMeal) || { id: m.idMeal, hits: 0 }; e.hits++; map.set(m.idMeal, e); }));
+    if (!map.size) { setStatus('#recipes-status', 'Aucune recette trouvée avec ces ingrédients. Essaie d’en retirer un.', true); return; }
+    const cands = [...map.values()].sort((a, b) => b.hits - a.hits).slice(0, 24);
+    const meals = (await Promise.all(cands.map(c => lookupMeal(c.id).catch(() => null)))).filter(Boolean);
+    const staples = $('#staples').checked;
+    recipeResults = meals.map(m => {
+      const flags = m.ings.map(i => hasIngredient(i.name, sel, staples));
+      const have = flags.filter(Boolean).length;
+      return Object.assign({}, m, { flags, have, total: m.ings.length, missing: m.ings.length - have });
+    });
+    recipeResults.sort((a, b) => a.missing - b.missing || b.have - a.have);
+    recipeResults = recipeResults.slice(0, 12);
+    $('#recipes').innerHTML = recipeResults.map((r, i) => recipeCard(r, i)).join('');
+    setStatus('#recipes-status', recipeResults.length + ' recettes proposées, de la plus simple à celle qui demande le plus de courses.');
+  } catch (e) {
+    setStatus('#recipes-status', esc(friendly(e)), true);
+  } finally { btn.disabled = false; }
+}
+function recipeCard(r, i) {
+  const miss = r.ings.filter((_, k) => !r.flags[k]).map(x => frName(x.name));
+  const line = r.missing === 0 ? '<span class="ok">Tu as tout ce qu’il faut</span>'
+    : `<span class="miss">Il manque : ${esc(miss.slice(0, 4).join(', '))}${miss.length > 4 ? ' et ' + (miss.length - 4) + ' autre' + (miss.length - 4 > 1 ? 's' : '') : ''}</span>`;
+  return `<button type="button" class="recipe" data-i="${i}"><img src="${esc(r.img)}/preview" alt="" loading="lazy"><span class="body"><span class="rt">${esc(r.name)}</span><span class="meta">${esc(r.cat)} · ${esc(r.area)}</span><span class="meter" aria-hidden="true"><i style="width:${Math.round(r.have / r.total * 100)}%"></i></span><span class="num meta">${r.have} sur ${r.total} ingrédients</span>${line}</span></button>`;
+}
+$('#recipes').addEventListener('click', e => {
+  const b = e.target.closest('.recipe'); if (!b) return;
+  openRecipe(recipeResults[Number(b.dataset.i)]);
+});
+function steps(text) {
+  return String(text).split(/\r?\n+/).map(s => s.trim()).filter(s => s && !/^(step\s*)?\d+[.)]?$/i.test(s)).map(s => s.replace(/^(step\s*)?\d+[.):-]\s*/i, ''));
+}
+function openRecipe(r) {
+  $('#sheet-title').textContent = r.name;
+  const st = steps(r.text);
+  $('#sheet-body').innerHTML =
+    `<img src="${esc(r.img)}" alt="">` +
+    `<div><span class="pill">${esc(r.cat)}</span> <span class="pill">${esc(r.area)}</span></div>` +
+    `<section><h4>Ingrédients</h4><ul class="ing">` +
+    r.ings.map((i, k) => `<li class="${r.flags[k] ? 'have' : 'lack'}"><span class="mark">${r.flags[k] ? '✓' : '+'}</span><span>${esc(frName(i.name))} <small>${esc(i.measure)}</small></span></li>`).join('') +
+    `</ul></section>` +
+    `<section><h4>Préparation</h4><ol class="steps" id="steps">${st.map(s => `<li>${esc(s)}</li>`).join('')}</ol></section>` +
+    `<div class="row-actions"><button type="button" class="btn small" id="btn-tr">Traduire en français</button>` +
+    (r.yt ? `<a class="btn ghost small" style="display:inline-flex;align-items:center;text-decoration:none" href="${esc(r.yt)}" target="_blank" rel="noopener">Voir la vidéo</a>` : '') + `</div>`;
+  $('#btn-tr').addEventListener('click', async ev => {
+    const b = ev.currentTarget; b.disabled = true; b.textContent = 'Traduction…';
+    try {
+      const out = await Promise.all(st.map(translate));
+      $('#steps').innerHTML = out.map(s => `<li>${esc(s)}</li>`).join('');
+      b.hidden = true;
+    } catch (e) { b.disabled = false; b.textContent = 'Traduction indisponible, réessayer'; }
+  });
+  const dlg = $('#sheet');
+  if (!dlg.open) dlg.showModal();
+  $('#sheet-body').scrollTop = 0;
+}
+async function translate(text) {
+  const parts = []; let cur = '';
+  String(text).split(/(?<=[.!?])\s+/).forEach(s => {
+    if ((cur + ' ' + s).length > 440 && cur) { parts.push(cur); cur = s; } else cur = cur ? cur + ' ' + s : s;
+  });
+  if (cur) parts.push(cur);
+  const outs = await Promise.all(parts.map(async p => {
+    const d = await getJson('https://api.mymemory.translated.net/get?q=' + encodeURIComponent(p) + '&langpair=en|fr');
+    const t = d && d.responseData && d.responseData.translatedText;
+    if (!t || /MYMEMORY WARNING/i.test(t)) throw new Error('quota');
+    return t;
+  }));
+  return outs.join(' ');
+}
+$('#sheet-close').addEventListener('click', () => $('#sheet').close());
+$('#sheet').addEventListener('click', e => { if (e.target === e.currentTarget) e.currentTarget.close(); });
+
+/* =====================================================
+   PARIS SPORTIFS
+   ===================================================== */
+const FD = 'https://api.football-data.org/v4';
+const COMPS = [['FL1','Ligue 1'],['PL','Premier League'],['PD','LaLiga'],['SA','Serie A'],['BL1','Bundesliga'],['CL','Ligue des champions'],['WC','Coupe du monde'],['EC','Euro'],['DED','Eredivisie'],['PPL','Primeira Liga'],['ELC','Championship'],['BSA','Brasileirão']];
+const compNames = Object.fromEntries(COMPS);
+const compSel = new Set(store.get('comps', ['FL1', 'PL', 'PD', 'SA', 'BL1', 'CL']));
+$('#fd-comps').innerHTML = COMPS.map(([c, n]) => `<button type="button" class="chip" data-c="${c}" aria-pressed="${compSel.has(c)}">${esc(n)}</button>`).join('');
+$('#fd-comps').addEventListener('click', e => {
+  const b = e.target.closest('.chip'); if (!b) return;
+  const c = b.dataset.c;
+  if (compSel.has(c)) compSel.delete(c); else compSel.add(c);
+  b.setAttribute('aria-pressed', String(compSel.has(c)));
+  store.set('comps', [...compSel]);
+});
+$('#fd-key').value = store.get('fdkey', '');
+$('#fd-days').value = store.get('fddays', '4');
+
+let lastFd = 0;
+async function fdFetch(path, key) {
+  const wait = lastFd + 6500 - Date.now();
+  if (wait > 0) await sleep(wait);
+  lastFd = Date.now();
+  try {
+    return await getJson(FD + path, { headers: { 'X-Auth-Token': key } });
+  } catch (e) {
+    if (e.status === 429) throw new Error('Limite de 10 requêtes par minute atteinte. Attends une minute puis relance.');
+    if (e.status === 401 || e.status === 400) throw new Error('Clé refusée par football-data.org. Vérifie qu’elle est bien copiée en entier.');
+    if (e.status === 403) throw new Error('Cette compétition n’est pas incluse dans l’offre gratuite.');
+    throw e;
+  }
+}
+function cacheGet(k, ttlMs) {
+  const v = store.get('cache.' + k, null);
+  return v && Date.now() - v.t < ttlMs ? v.d : null;
+}
+function cacheSet(k, d) { store.set('cache.' + k, { t: Date.now(), d }); }
+
+$('#btn-paris').addEventListener('click', runParis);
+async function runParis() {
+  const key = $('#fd-key').value.trim();
+  const days = Number($('#fd-days').value);
+  const wantScorers = $('#fd-scorers').checked;
+  if (!key) { setStatus('#paris-status', 'Colle d’abord ta clé football-data.org dans les réglages.', true); $('#fd-config').open = true; return; }
+  if (!compSel.size) { setStatus('#paris-status', 'Choisis au moins une compétition.', true); return; }
+  store.set('fdkey', key); store.set('fddays', String(days));
+  const btn = $('#btn-paris'); btn.disabled = true;
+  $('#paris-list').innerHTML = '';
+  try {
+    const from = new Date(), to = new Date(Date.now() + days * 864e5);
+    const iso = d => d.toISOString().slice(0, 10);
+    const codes = [...compSel];
+    setStatus('#paris-status', loading('Récupération du calendrier…'));
+    const cal = await fdFetch(`/matches?competitions=${codes.join(',')}&dateFrom=${iso(from)}&dateTo=${iso(to)}&status=SCHEDULED,TIMED`, key);
+    const matches = (cal.matches || []).filter(m => m.homeTeam && m.homeTeam.id && m.awayTeam && m.awayTeam.id);
+    if (!matches.length) { setStatus('#paris-status', 'Aucun match programmé dans cette période pour les compétitions choisies.'); return; }
+    const active = [...new Set(matches.map(m => m.competition.code))];
+    const totalSteps = active.length * (wantScorers ? 2 : 1);
+    let done = 0;
+    const strengths = {}, scorers = {};
+    for (const code of active) {
+      done++;
+      setStatus('#paris-status', loading(`Analyse de ${compNames[code] || code} (${done}/${totalSteps}). Le service gratuit limite le rythme, patience.`));
+      let st = cacheGet('st.' + code, 6 * 36e5);
+      try {
+        if (!st) {
+          const d = await fdFetch(`/competitions/${code}/standings`, key);
+          const rows = new Map();
+          (d.standings || []).filter(s => s.type === 'TOTAL').forEach(s => (s.table || []).forEach(r => {
+            const prev = rows.get(r.team.id);
+            if (!prev || r.playedGames > prev.p) rows.set(r.team.id, { id: r.team.id, p: r.playedGames || 0, gf: r.goalsFor || 0, ga: r.goalsAgainst || 0 });
+          }));
+          st = [...rows.values()]; cacheSet('st.' + code, st);
+        }
+      } catch (e) { if (e.message && /Limite|Clé/.test(e.message)) throw e; st = []; }
+      strengths[code] = buildStrengths(st);
+      if (wantScorers) {
+        done++;
+        setStatus('#paris-status', loading(`Buteurs de ${compNames[code] || code} (${done}/${totalSteps})…`));
+        let sc = cacheGet('sc.' + code, 6 * 36e5);
+        try {
+          if (!sc) { const d = await fdFetch(`/competitions/${code}/scorers?limit=60`, key); sc = d.scorers || []; cacheSet('sc.' + code, sc); }
+        } catch (e) { if (e.message && /Limite|Clé/.test(e.message)) throw e; sc = []; }
+        scorers[code] = sc;
+      }
+    }
+    const rows = matches.map(m => {
+      const code = m.competition.code, neutral = code === 'WC';
+      const p = predictMatch(strengths[code], m.homeTeam.id, m.awayTeam.id, neutral);
+      const top = Math.max(p.h, p.d, p.a);
+      const pick = top === p.h ? 'h' : top === p.a ? 'a' : 'd';
+      const sc = wantScorers ? bestScorer(scorers[code], m.homeTeam.id, m.awayTeam.id, strengths[code], neutral) : null;
+      return { m, p, top, pick, sc };
+    }).sort((a, b) => b.top - a.top).slice(0, 80);
+    $('#paris-list').innerHTML = rows.map((r, i) => matchRow(r, i, wantScorers)).join('');
+    setStatus('#paris-status', rows.length + ' matchs classés du plus sûr au moins sûr.');
+    $('#fd-config').open = false;
+  } catch (e) {
+    setStatus('#paris-status', esc(friendly(e)), true);
+  } finally { btn.disabled = false; }
+}
+function matchRow(r, i, wantScorers) {
+  const { m, p, top, pick, sc } = r;
+  const hn = m.homeTeam.shortName || m.homeTeam.name, an = m.awayTeam.shortName || m.awayTeam.name;
+  const label = pick === 'h' ? 'Victoire ' + hn : pick === 'a' ? 'Victoire ' + an : 'Match nul';
+  const when = new Intl.DateTimeFormat('fr-FR', { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }).format(new Date(m.utcDate));
+  const low = p.games < 4 ? '<span class="low">Peu de matchs joués, estimation fragile</span>' : '';
+  const scorer = !wantScorers ? '<span class="low">Désactivé</span>'
+    : sc ? `<div class="who"><strong>${esc(sc.name)} <span class="low">(${esc(sc.team)})</span></strong><b>${pct(sc.prob)}</b></div>`
+    : '<span class="low">Aucun buteur dans le top 60 de la compétition</span>';
+  return `<article class="match"><div class="rank">${String(i + 1).padStart(2, '0')}</div>` +
+    `<div class="teams"><span class="comp">${esc(compNames[m.competition.code] || m.competition.name)}</span><strong>${esc(hn)} – ${esc(an)}</strong><span class="when">${esc(when)}</span>${low}</div>` +
+    `<div class="pick"><div class="pick-line"><span>${esc(label)}</span><b>${pct(top)}</b></div><span class="meter" aria-hidden="true"><i style="width:${Math.round(top * 100)}%"></i></span><small class="num">${esc(hn)} ${pct(p.h)} · Nul ${pct(p.d)} · ${esc(an)} ${pct(p.a)}</small></div>` +
+    `<div class="sc"><span class="lbl">Buteur le plus probable</span>${scorer}</div></article>`;
+}
+
+/* =====================================================
+   CRYPTO
+   ===================================================== */
+const CG = 'https://api.coingecko.com/api/v3/coins/markets?vs_currency=eur&order=market_cap_desc&per_page=250&page=1&sparkline=true&price_change_percentage=1h,24h,7d,30d';
+const CR = { data: [], period: store.get('cr.period', '24h'), universe: store.get('cr.universe', 100), minVol: store.get('cr.vol', true), updated: null, busy: false };
+const PKEY = { '1h': 'price_change_percentage_1h_in_currency', '24h': 'price_change_percentage_24h_in_currency', '7d': 'price_change_percentage_7d_in_currency', '30d': 'price_change_percentage_30d_in_currency' };
+function syncCryptoControls() {
+  $$('#cr-period button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.p === CR.period)));
+  $$('#cr-universe button').forEach(b => b.setAttribute('aria-pressed', String(Number(b.dataset.u) === CR.universe)));
+  $('#cr-vol').checked = CR.minVol;
+}
+$('#cr-period').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; CR.period = b.dataset.p; store.set('cr.period', CR.period); syncCryptoControls(); renderCrypto(); });
+$('#cr-universe').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; CR.universe = Number(b.dataset.u); store.set('cr.universe', CR.universe); syncCryptoControls(); renderCrypto(); });
+$('#cr-vol').addEventListener('change', e => { CR.minVol = e.target.checked; store.set('cr.vol', CR.minVol); renderCrypto(); });
+$('#btn-crypto').addEventListener('click', () => loadCrypto());
+async function loadCrypto(silent) {
+  if (CR.busy) return;
+  CR.busy = true;
+  if (!silent) setStatus('#crypto-status', loading('Chargement des cours…'));
+  try {
+    CR.data = await getJson(CG);
+    CR.updated = new Date();
+    renderCrypto();
+  } catch (e) {
+    const msg = e.status === 429 ? 'CoinGecko limite le nombre de requêtes. Réessaie dans une minute.' : friendly(e);
+    setStatus('#crypto-status', esc(msg) + (CR.data.length ? ' Les cours affichés datent de ' + CR.updated.toLocaleTimeString('fr-FR') + '.' : ''), true);
+  } finally { CR.busy = false; }
+}
+function eur(v) {
+  const d = v >= 1000 ? 0 : v >= 1 ? 2 : v >= 0.01 ? 4 : 6;
+  return new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR', minimumFractionDigits: d > 2 ? d : 2, maximumFractionDigits: d }).format(v);
+}
+function compact(v) { return new Intl.NumberFormat('fr-FR', { notation: 'compact', maximumFractionDigits: 1 }).format(v) + ' €'; }
+function chg(v) { if (!Number.isFinite(v)) return '<span class="low">n.d.</span>'; return `<span class="${v >= 0 ? 'up' : 'down'}">${v >= 0 ? '▲ +' : '▼ '}${v.toFixed(2).replace('.', ',')} %</span>`; }
+function spark(prices) {
+  if (!prices || prices.length < 2) return '';
+  const pts = prices.filter((_, i) => i % 3 === 0);
+  const min = Math.min(...pts), max = Math.max(...pts), w = 96, h = 28;
+  const d = pts.map((v, i) => `${(i / (pts.length - 1) * w).toFixed(1)},${(h - 2 - ((v - min) / ((max - min) || 1)) * (h - 4)).toFixed(1)}`).join(' ');
+  return `<svg class="spark ${pts[pts.length - 1] >= pts[0] ? 'up' : 'down'}" viewBox="0 0 ${w} ${h}" aria-hidden="true"><polyline points="${d}" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round"/></svg>`;
+}
+function renderCrypto() {
+  const key = PKEY[CR.period];
+  const list = CR.data.filter(c => c.market_cap_rank && c.market_cap_rank <= CR.universe && (!CR.minVol || c.total_volume >= 5e6) && Number.isFinite(c[key]))
+    .sort((a, b) => b[key] - a[key]).slice(0, 25);
+  $('#crypto-list').innerHTML = list.map((c, i) =>
+    `<article class="coin"><span class="rk">${i + 1}</span>` +
+    `<div class="id"><img src="${esc(c.image)}" alt="" loading="lazy"><div><strong>${esc(c.name)}</strong><span>${esc(c.symbol)} · rang ${c.market_cap_rank}</span></div></div>` +
+    `<div class="main">${chg(c[key])}</div>` +
+    `<div class="px"><span class="num p-price">${esc(eur(c.current_price))}</span><span class="num p-vol"><span class="vl">Volume </span>${esc(compact(c.total_volume))}</span><span class="sparkcell">${spark(c.sparkline_in_7d && c.sparkline_in_7d.price)}</span></div></article>`).join('');
+  const t = CR.updated ? CR.updated.toLocaleTimeString('fr-FR') : '';
+  setStatus('#crypto-status', list.length ? `Top ${list.length} des hausses sur ${CR.period === '7d' ? '7 jours' : CR.period === '30d' ? '30 jours' : CR.period.replace('h', ' heure' + (CR.period === '24h' ? 's' : ''))}. Mis à jour à ${t}.` : 'Aucune crypto ne correspond à ces filtres.');
+}
+setInterval(() => { if (activeTab === 'crypto' && !document.hidden) loadCrypto(true); }, 90000);
+syncCryptoControls();
+
+/* =====================================================
+   ENTREPRISES DU BAS-RHIN
+   ===================================================== */
+const API_E = 'https://recherche-entreprises.api.gouv.fr/search';
+const SECTORS = [
+  { id: 'resto', label: 'Restaurants et bars', naf: '56.10A,56.10C,56.30Z', fit: 30 },
+  { id: 'beaute', label: 'Coiffure et beauté', naf: '96.02A,96.02B,96.04Z', fit: 30 },
+  { id: 'boul', label: 'Boulangeries et pâtisseries', naf: '10.71C,10.71D', fit: 22 },
+  { id: 'hotel', label: 'Hôtels et hébergement', naf: '55.10Z,55.20Z', fit: 25 },
+  { id: 'mode', label: 'Mode et accessoires', naf: '47.71Z,47.72A,47.77Z', fit: 28 },
+  { id: 'fleur', label: 'Fleuristes et cadeaux', naf: '47.76Z,47.78C', fit: 27 },
+  { id: 'cave', label: 'Caves et épiceries fines', naf: '47.25Z,47.29Z', fit: 24 },
+  { id: 'sport', label: 'Sport et bien-être', naf: '93.13Z,93.12Z', fit: 28 },
+  { id: 'immo', label: 'Agences immobilières', naf: '68.31Z', fit: 22 }
+];
+const NAF = {};
+SECTORS.forEach(s => s.naf.split(',').forEach(c => { NAF[c] = s; }));
+const EFF = { NN: 'Sans salarié', '00': '0 salarié', '01': '1 à 2 salariés', '02': '3 à 5 salariés', '03': '6 à 9 salariés', '11': '10 à 19 salariés', '12': '20 à 49 salariés', '21': '50 à 99 salariés' };
+const secSel = new Set(store.get('sectors', ['resto']));
+$('#cl-sectors').innerHTML = SECTORS.map(s => `<button type="button" class="chip" data-s="${s.id}" aria-pressed="${secSel.has(s.id)}">${esc(s.label)}</button>`).join('');
+$('#cl-sectors').addEventListener('click', e => {
+  const b = e.target.closest('.chip'); if (!b) return;
+  const id = b.dataset.s;
+  if (secSel.has(id)) secSel.delete(id); else secSel.add(id);
+  b.setAttribute('aria-pressed', String(secSel.has(id)));
+  store.set('sectors', [...secSel]);
+});
+
+const cl = { items: [], seen: new Set(), page: 0, more: false, naf: '' };
+function normCompany(r) {
+  const est = (r.matching_etablissements && r.matching_etablissements[0]) || r.siege || {};
+  const code = est.activite_principale || r.activite_principale || '';
+  const sector = NAF[code] || NAF[r.activite_principale] || null;
+  let eff = est.tranche_effectif_salarie;
+  if (eff === undefined || eff === null) eff = est.caractere_employeur === 'N' ? 'NN' : (r.tranche_effectif_salarie === undefined ? null : r.tranche_effectif_salarie);
+  const created = est.date_creation || r.date_creation || null;
+  const months = monthsSince(created, new Date());
+  const name = r.nom_complet || r.nom_raison_sociale || 'Sans nom';
+  const commune = est.libelle_commune || '';
+  return {
+    siren: r.siren, name, commune, addr: est.adresse || '', code, sector: sector ? sector.label : code,
+    eff, effLabel: eff === null ? 'Effectif non communiqué' : (EFF[eff] || 'Effectif ' + eff), created, months,
+    score: scoreCompany(sector ? sector.fit : 20, eff, months),
+    big: r.categorie_entreprise === 'GE' || r.categorie_entreprise === 'ETI' || (r.nombre_etablissements || 1) > 6 || String(r.nature_juridique || '').startsWith('1')
+  };
+}
+function passes(c) {
+  if (c.big) return false;
+  const age = Number($('#cl-age').value), size = $('#cl-size').value, city = $('#cl-city').value.trim().toLowerCase();
+  if (age && (c.months === null || c.months > age)) return false;
+  if (size !== 'any') {
+    const ok = size === '5' ? [null, 'NN', '00', '01', '02'] : [null, 'NN', '00', '01', '02', '03'];
+    if (!ok.includes(c.eff)) return false;
+  }
+  if (city && !c.commune.toLowerCase().includes(city)) return false;
+  return true;
+}
+async function loadCompanyPage() {
+  cl.page += 1;
+  const base = `departement=67&activite_principale=${cl.naf}&etat_administratif=A&per_page=25&page=${cl.page}`;
+  let d;
+  try { d = await getJson(`${API_E}?${base}&est_entrepreneur_individuel=false&categorie_entreprise=PME`); }
+  catch (e) { if (e.status === 400) d = await getJson(`${API_E}?${base}`); else throw e; }
+  (d.results || []).forEach(r => { if (!cl.seen.has(r.siren)) { cl.seen.add(r.siren); cl.items.push(normCompany(r)); } });
+  cl.more = cl.page < (d.total_pages || 0) && cl.page < 400;
+}
+const shown = () => cl.items.filter(passes);
+async function fillCompanies(target) {
+  const btn = $('#btn-clients'); btn.disabled = true;
+  let loops = 0;
+  try {
+    while (cl.more && loops < 14 && shown().length < target) {
+      setStatus('#clients-status', loading(`Recherche en cours… ${shown().length} fiches retenues sur ${cl.items.length} entreprises lues.`));
+      await loadCompanyPage();
+      loops++;
+      await sleep(180);
+    }
+    renderCompanies();
+  } catch (e) {
+    renderCompanies();
+    setStatus('#clients-status', esc(e.status === 429 ? 'Trop de requêtes, patiente quelques secondes puis clique sur « Charger plus ».' : friendly(e)), true);
+  } finally { btn.disabled = false; }
+}
+$('#btn-clients').addEventListener('click', () => {
+  if (!secSel.size) { setStatus('#clients-status', 'Choisis au moins un secteur.', true); return; }
+  cl.items = []; cl.seen = new Set(); cl.page = 0; cl.more = true;
+  cl.naf = SECTORS.filter(s => secSel.has(s.id)).map(s => s.naf).join(',');
+  $('#clients-list').innerHTML = '';
+  fillCompanies(30);
+});
+$('#btn-more').addEventListener('click', () => fillCompanies(shown().length + 30));
+['#cl-age', '#cl-size', '#cl-city'].forEach(s => $(s).addEventListener('change', () => { if (cl.items.length) fillCompanies(30); }));
+function ageLabel(m) {
+  if (m === null) return 'date inconnue';
+  if (m < 1) return 'ce mois-ci';
+  if (m < 24) return 'il y a ' + m + ' mois';
+  return 'il y a ' + Math.floor(m / 12) + ' ans';
+}
+function renderCompanies() {
+  const list = shown().sort((a, b) => b.score - a.score);
+  $('#clients-list').innerHTML = list.map(c => {
+    const lvl = c.score >= 70 ? 'fort' : c.score >= 50 ? 'moyen' : 'faible';
+    const q = encodeURIComponent(c.name + ' ' + c.commune);
+    return `<article class="co"><div class="score ${lvl}"><b>${c.score}</b><span>${lvl === 'fort' ? 'Fort' : lvl === 'moyen' ? 'Moyen' : 'Faible'}</span></div>` +
+      `<div class="co-main"><h3>${esc(c.name)}</h3><p>${esc(c.sector)} · ${esc(c.commune)}</p><p>Créée ${esc(ageLabel(c.months))} · ${esc(c.effLabel)}</p><p>${esc(c.addr)}</p></div>` +
+      `<div class="co-links"><a href="https://www.google.com/search?q=${q}" target="_blank" rel="noopener">Google</a><a href="https://www.google.com/search?q=${encodeURIComponent('site:instagram.com ' + c.name + ' ' + c.commune)}" target="_blank" rel="noopener">Instagram</a><a href="https://www.google.com/maps/search/?api=1&query=${q}" target="_blank" rel="noopener">Maps</a></div></article>`;
+  }).join('');
+  $('#btn-more').hidden = !cl.more;
+  $('#btn-csv').hidden = !list.length;
+  setStatus('#clients-status', list.length ? `${list.length} entreprises retenues sur ${cl.items.length} lues${cl.more ? '. Clique sur « Charger plus » pour en lire davantage.' : '.'}` : (cl.more ? 'Aucune fiche ne correspond encore à ces filtres. Clique sur « Charger plus » ou élargis les critères.' : 'Aucune entreprise ne correspond à ces filtres.'));
+}
+$('#btn-csv').addEventListener('click', () => {
+  const rows = [['Nom', 'SIREN', 'Commune', 'Adresse', 'Secteur', 'Création', 'Effectif', 'Score']].concat(
+    shown().sort((a, b) => b.score - a.score).map(c => [c.name, c.siren, c.commune, c.addr, c.sector, c.created || '', c.effLabel, c.score]));
+  const csv = '﻿' + rows.map(r => r.map(v => '"' + String(v).replace(/"/g, '""') + '"').join(';')).join('\r\n');
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
+  a.download = 'entreprises-bas-rhin.csv';
+  document.body.appendChild(a); a.click(); a.remove();
+});
+
+/* ---------- Démarrage ---------- */
+renderChips();
+showTab((location.hash || '').slice(1), false);
+</script>
+</body>
+</html>
